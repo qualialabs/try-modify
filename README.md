@@ -8,7 +8,7 @@ documents.
 We commonly need to modify multiple documents in a collection, for example in a
 loop:
 
-```
+```js
 let ids = ['idA', 'idB', 'idC'];
 items.forEach(id => {
   MyCollection.update(id, {
@@ -36,8 +36,8 @@ a multi-document update.
 
 ## Usage
 
-```
-tryModify(modifierBuilder)
+```js
+tryModify(modifierBuilder);
 ```
 
 `tryModify` allows you to write code describing the updates you want to
