@@ -10,7 +10,7 @@ loop:
 
 ```js
 let ids = ['idA', 'idB', 'idC'];
-items.forEach(id => {
+ids.forEach(id => {
   MyCollection.update(id, {
     $set: {
       my_field: true,
@@ -26,9 +26,24 @@ In this simple example, we can reasonably expect all of the updates to succeed.
 
 However, if we need more complex logic to determine each update modifier, it's
 possible that we will get most of the way through this `forEach` iteration and
-then fail to update an item. When that happens, we potentially will have
-modified many documents in the collection, so it might be hard to undo the
-changes.
+then fail to update an item:
+
+```js
+let ids = ['idA', 'idB', 'idC'];
+ids.forEach(id => {
+  if (Math.random() > 0.5) {
+    throw new Error('which updates have run? :)');
+  }
+  MyCollection.update(id, {
+    $set: {
+      my_field: true,
+    }
+  });
+});
+```
+
+When an iterating update fails, we potentially will have modified many documents
+in the collection, so it might be hard to undo the changes.
 
 `tryModify` provides a way to compute the full list of modifiers before applying
 and of them to your collections, reducing the risk of failing in the middle of
