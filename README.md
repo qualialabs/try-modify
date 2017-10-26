@@ -46,7 +46,7 @@ When an iterating update fails, we potentially will have modified many documents
 in the collection, so it might be hard to undo the changes.
 
 `tryModify` provides a way to compute the full list of modifiers before applying
-and of them to your collections, reducing the risk of failing in the middle of
+any of them to your collections, reducing the risk of failing in the middle of
 a multi-document update.
 
 ## Usage
@@ -73,10 +73,13 @@ try {
       shape: 'round',
     });
 
-    update(Fruits, 'grape_id', {
-      $set: {
-        color: 'purple'
-      }
+    let purpleIDs = ['grape_id', 'plum_id', 'acai_id'];
+    purpleIDs.forEach(id => {
+      update(Fruits, id, {
+        $set: {
+          color: 'purple'
+        }
+      });
     });
 
     // Compute something hard, maybe throwing an exception
@@ -87,7 +90,7 @@ try {
   });
 
   // Results will be an array of the return values from Mongo for each modifier
-  console.log(results) // e.g. [1, 1, 1]
+  console.log(results) // e.g. "inserted-apple-id", 1, 1, 1, 1
 
 } catch (e) {
   // Handle any exceptions thrown above if needed
