@@ -60,7 +60,43 @@ perform, but it only applies them after you fully construct your modifier.
 
 It takes a single argument, your `modifierBuilder` function, described below.
 
-Here's an example, showing all of the available operations. Let's assume
+Here's the above simple example, updated to use `tryModify`:
+
+```js
+tryModify(({update}) => {
+  let ids = ['idA', 'idB', 'idC'];
+  ids.forEach(id => {
+    if (Math.random() > 0.5) {
+      throw new Error('At least no updates have run yet! :)');
+    }
+    update(MyCollection, id, {
+      $set: {
+        my_field: true,
+      }
+    });
+  });
+});
+```
+
+Pass `tryModify` a callback with code to modify your collections. Your callback
+will be invoked with an object containing the operator functions `insert`,
+`update`, and `remove`, which are API-compatible with the Mongo versions except
+that they require the collection as the first argument. Above, we only use
+`update`, so it's the only argument we destructure.
+
+As you invoke the operator functions, `tryModify` appends the modifiers to
+an internal list. When your function completes, `tryModify` replays the
+modifiers on the collections you've specified.
+
+If your function throws an exception, `tryModify` will allow it to bubble up,
+and it won't apply any of the modifiers to any collection.
+
+If we end up throwing an exception above, then we can rest assured that `MyCollection`
+has not been modified at all. If we happen to make it through the `forEach` iteration
+without throwing, then our three updates will be applied to `MyCollection` in the
+order we called `update`.
+
+Here's a more complete example, showing all of the available operations. Let's assume
 we have a collection called `Fruits`:
 
 ```js
@@ -96,15 +132,3 @@ try {
   // Handle any exceptions thrown above if needed
 }
 ```
-
-Pass `tryModify` a callback with code to modify your collections. Your callback
-will be invoked with an object containing the operator functions `insert`,
-`update`, and `remove`, which are API-compatible with the Mongo versions except
-that they require the collection as the first argument.
-
-As you invoke these operator functions, `tryModify` appends the modifiers to
-an internal list. When your function completes, `tryModify` replays the
-modifiers on the collections you've specified.
-
-If your function throws an exception, `tryModify` will allow it to bubble up,
-and it won't apply any of the modifiers to any collection.
