@@ -1,7 +1,7 @@
 Package.describe({
   name: 'qualia:try-modify',
   version: '0.0.2',
-  summary: '',
+  summary: 'Construct multi-document Mongo modifiers transactionally',
   git: 'https://github.com/qualialabs/try-modify',
   documentation: 'README.md'
 });
