@@ -7,7 +7,7 @@ Package.describe({
 });
 
 var dependencies = [
-  'ecmascript',
+  'ecmascript@0.9.0',
 ];
 
 Package.onUse(function(api) {
@@ -18,9 +18,9 @@ Package.onUse(function(api) {
 Package.onTest(function(api) {
   api.use(dependencies);
   api.use([
-    'tinytest',
-    'practicalmeteor:sinon',
-    'qualia:try-modify',
+    'tinytest@1.0.12',
+    'practicalmeteor:sinon@1.10.3_2',
+    'qualia:try-modify@0.0.2',
   ]);
   api.mainModule('test.js');
 });
