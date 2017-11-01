@@ -1,11 +1,22 @@
 'use_strict';
 import tryModify from './lib';
 
+let spyFactory = (returnValue) => sinon.spy((...args) => {
+  // Imitate meteor operations, async on the client and sync on the server
+  if (Meteor.isClient) {
+    let callback = args[args.length - 1];
+    callback(null, returnValue);
+    return returnValue;
+  } else {
+    return returnValue;
+  }
+});
+
 let collectionStubFactory = () => {
   return {
-    insert: sinon.stub().returns(1),
-    update: sinon.stub().returns(1),
-    remove: sinon.stub().returns(1),
+    insert: spyFactory(1),
+    update: spyFactory(1),
+    remove: spyFactory(1),
   };
 };
 
@@ -39,9 +50,9 @@ Tinytest.add('it removes correctly', test => {
   sinon.assert.calledWith(collectionStub.remove, 'id');
 });
 
-Tinytest.add('it collects the full sequence of operations before applying any', test => {
+Tinytest.addAsync('it collects the full sequence of operations before applying any', async (test, onComplete) => {
   let collectionStub = collectionStubFactory();
-  collectionStub.insert.returns(0);
+  collectionStub.insert = spyFactory(0);
   let doc = {};
   let results = tryModify(({insert, update, remove, upsert}) => {
     insert(collectionStub, doc);
@@ -62,18 +73,45 @@ Tinytest.add('it collects the full sequence of operations before applying any', 
     }
   });
 
-  test.equal(results, [0, 1, 1, 0]);
+  if (Meteor.isServer) {
+    test.equal(results, [0, 1, 1, 0]);
+    onComplete();
+  } else {
+    results = await Promise.all(results);
+    test.equal(results, [0, 1, 1, 0]);
+    onComplete();
+  }
 });
 
-Tinytest.add('it passes along exceptions thrown in the client function', test => {
+Tinytest.addAsync('it passes along exceptions thrown in the client function', (test, onComplete) => {
   let collectionStub = collectionStubFactory();
-  collectionStub.insert = sinon.stub().throws(new Error('oops'));
-  try {
-    tryModify(({insert, update, remove, upsert}) => {
+  if (Meteor.isServer) {
+    // Throw exceptions synchronously on the server
+    collectionStub.insert = sinon.stub().throws(new Error('oops'));
+    try {
+      tryModify(({insert, update, remove, upsert}) => {
+        insert(collectionStub, 'id', {});
+      });
+      test.isTrue(false, 'this code should not execute');
+    } catch (e) {
+      test.equal(e.message, 'oops');
+    }
+    onComplete();
+  } else {
+    // Put exceptions in promises on the client
+    collectionStub.insert = sinon.spy((...args) => {
+      let callback = args[args.length - 1];
+      callback('oops');
+    });
+    results = tryModify(({insert, update, remove, upsert}) => {
       insert(collectionStub, 'id', {});
     });
-    test.isTrue(false, 'this code should not execute');
-  } catch (e) {
-    test.equal(e.message, 'oops');
+    Promise.all(results).then((res) => {
+      test.isTrue(false, 'the promise should have been rejected');
+    }).catch((err) => {
+      test.equal(err, 'oops');
+      onComplete();
+    });
   }
+
 });

@@ -1,6 +1,6 @@
 Package.describe({
   name: 'qualia:try-modify',
-  version: '0.0.1',
+  version: '0.0.2',
   summary: '',
   git: 'https://github.com/qualialabs/try-modify',
   documentation: 'README.md'

@@ -14,9 +14,19 @@ let tryModify = (modifierBuilder) => {
 
   modifierBuilder(operations);
 
-  return modList.map(({operation, collection, args}) => {
-    return collection[operation].apply(collection, args);
-  });
+  if (Meteor.isClient) {
+    return modList.map(({operation, collection, args}) => {
+      return new Promise((resolve, reject) => {
+        collection[operation].call(collection, ...args, (err, res) => {
+          err ? reject(err) : resolve(res);
+        });
+      });
+    });
+  } else {
+    return modList.map(({operation, collection, args}) => {
+      return collection[operation].apply(collection, args);
+    });
+  }
 };
 
 export {tryModify};

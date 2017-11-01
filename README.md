@@ -59,6 +59,18 @@ tryModify(modifierBuilder);
 perform, but it only applies them after you fully construct your modifier.
 
 It takes a single argument, your `modifierBuilder` function, described below.
+The modifier builder calls stubbed collection operation functions. If it
+completes without throwing exceptions, all of the operations are applied to
+the collection.
+
+`tryModify` returns different things depending on where it runs:
+
+* on the server, collection updates are synchronous, and `tryModify`
+synchronously returns an array of the result of each collection operation, in
+order.
+* on the client, collection updates are asynchronous, and `tryModify` returns
+an array of promises, each of which resolves to the result of the corresponding
+collection operation.
 
 Here's the above simple example, updated to use `tryModify`:
 
@@ -125,8 +137,14 @@ try {
 
   });
 
-  // Results will be an array of the return values from Mongo for each modifier
-  console.log(results) // e.g. "inserted-apple-id", 1, 1, 1, 1
+  if (Meteor.isServer) {
+    // Results will be an array of the return values from Mongo for each operation
+    console.log(results) // e.g. "inserted-apple-id", 1, 1, 1, 1
+  } else {
+    // Results will be an array of promises for each Mongo operation
+    values = await Promise.all(results);
+    console.log(values); // e.g. "inserted-apple-id", 1, 1, 1, 1
+  }
 
 } catch (e) {
   // Handle any exceptions thrown above if needed
