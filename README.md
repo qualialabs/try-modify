@@ -113,9 +113,7 @@ we have a collection called `Fruits`:
 
 ```js
 try {
-
-  let results = tryModify(({insert, update, remove}) => {
-
+  let promisesOrResults = tryModify(({insert, update, remove}) => {
     insert(Fruits, {
       name: 'Apple',
       shape: 'round',
@@ -132,21 +130,27 @@ try {
 
     // Compute something hard, maybe throwing an exception
     removeID = myFunctionThatMightThrowException();
-
     remove(Fruits, removeID);
-
   });
+} catch(e) {
+  // Handle any errors thrown while building the modifier. On the server,
+  // collection updates happen synchronously, so this block will also catch
+  // errors thrown while applying the operations to the collections.
+}
 
-  if (Meteor.isServer) {
-    // Results will be an array of the return values from Mongo for each operation
-    console.log(results) // e.g. "inserted-apple-id", 1, 1, 1, 1
-  } else {
-    // Results will be an array of promises for each Mongo operation
-    values = await Promise.all(results);
-    console.log(values); // e.g. "inserted-apple-id", 1, 1, 1, 1
+// Depending on where you call tryModify, the results are different:
+
+if (Meteor.isClient) {
+  // On the client, we don't know if the updates succeeded until later:
+  try {
+    let results = await Promise.all(promisesOrResults);
+    console.log(results); // e.g. "inserted-apple-id", 1, 1, 1, 1
+  } catch (e) {
+    // Something went wrong while applying the updates to the collection
   }
-
-} catch (e) {
-  // Handle any exceptions thrown above if needed
+} else {
+  // On the server, `promises` is just an array of results, so the await is not
+  // necessary. At this point, all updates have already been applied.
+  console.log(promisesOrResults); // e.g. "inserted-apple-id", 1, 1, 1, 1
 }
 ```
